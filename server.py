@@ -5,7 +5,7 @@ SERVER_HOST = ''
 SERVER_PORT = 12345
 ADDR = (SERVER_HOST,SERVER_PORT)
 
-server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
 
 clients = []
@@ -46,6 +46,7 @@ def rimozione_client(client):
         clients.remove(client)
 
 while True:
+    server_socket.listen(5)
     client_socket,client_address = server_socket.accept()
     
     clients.append(client_socket)
