@@ -45,6 +45,8 @@ def rimozione_client(client):
     if client in clients:
         clients.remove(client)
 
+print("Server in ascolto...")
+
 while True:
     server_socket.listen(5)
     client_socket,client_address = server_socket.accept()
