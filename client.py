@@ -2,26 +2,19 @@ import socket
 import threading
 import tkinter as tk
 
-SERVER_HOST = input("Inserisci il server host: ")
-SERVER_PORT = int(input("Inserisci il server port: ") or 12345)
-ADDR = (SERVER_HOST, SERVER_PORT)
-
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(ADDR)
-
 def ricevimento():
     while True:
         try:
             message = client_socket.recv(1024).decode("utf8")
             message_list.insert(tk.END, message)
-            message_list.see(tk.END)
+           # message_list.see(tk.END)
         except OSError:
             break       
         
-def invio():
-    while True:
-        message = input()
-        client_socket.send(bytes(message,"utf8"))
+def invio(event=None):
+    message = my_message.get()
+    my_message.set("")
+    client_socket.send(bytes(message,"utf8"))
 
 window = tk.Tk()
 window.title("Chat Client")
@@ -43,6 +36,13 @@ entry_field.pack()
 
 send_button = tk.Button(window, text="Invia", command=invio)
 send_button.pack()
+
+SERVER_HOST = input("Inserisci il server host: ")
+SERVER_PORT = int(input("Inserisci il server port: ") or 12345)
+ADDR = (SERVER_HOST, SERVER_PORT)
+
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect(ADDR)
 
 receive_thread = threading.Thread(target=ricevimento)
 receive_thread.start()
