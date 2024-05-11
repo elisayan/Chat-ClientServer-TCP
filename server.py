@@ -26,7 +26,6 @@ def handle_client(client, nickname):
     while True:
         try:
             message=client.recv(1024).decode('utf-8')
-            print(nickname +" dice "+message)
             broadcast(message)
             
         except:
@@ -46,7 +45,7 @@ def remove_client(client):
     if client in clients:
         nickname = nicknames.pop(clients.index(client))
         clients.remove(client)
-        broadcast("%s ha lasciato la chat..." % nickname)
+        broadcast("%s ha lasciato la chat...\n" % nickname)
 
 clients = []
 nicknames = []
