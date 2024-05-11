@@ -1,50 +1,92 @@
 import socket
 import threading
 import tkinter as tk
-
-def ricevimento():
-    while True:
-        try:
-            message = client_socket.recv(1024).decode("utf8")
-            message_list.insert(tk.END, message)
-           # message_list.see(tk.END)
-        except OSError:
-            break       
-        
-def invio(event=None):
-    message = my_message.get()
-    my_message.set("")
-    client_socket.send(bytes(message,"utf8"))
-
-window = tk.Tk()
-window.title("Chat Client")
-
-message_frame=tk.Frame(window)
-
-my_message = tk.StringVar()
-my_message.set("Scrivi i tuoi messaggi")
-scrollbar = tk.Scrollbar(message_frame)
-
-message_list = tk.Listbox(message_frame, height=15, width=50, yscrollcommand=scrollbar.set)
-message_list.pack(side=tk.LEFT, fill=tk.BOTH)
-scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-message_frame.pack()
-
-entry_field = tk.Entry(window,textvariable=my_message)
-entry_field.bind("<Return>", invio)
-entry_field.pack()
-
-send_button = tk.Button(window, text="Invia", command=invio)
-send_button.pack()
+import tkinter.scrolledtext
+from tkinter import simpledialog
 
 SERVER_HOST = input("Inserisci il server host: ")
 SERVER_PORT = int(input("Inserisci il server port: ") or 12345)
 ADDR = (SERVER_HOST, SERVER_PORT)
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(ADDR)
-
-receive_thread = threading.Thread(target=ricevimento)
-receive_thread.start()
-
-window.mainloop()
+class Client:
+    
+    def __init__(self, SERVER_HOST, SERVER_PORT):    
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(ADDR)
+        
+        msg=tk.Tk()
+        msg.withdraw()
+        
+        self.nickname = simpledialog.askstring("Nickname", "Inserisci il tuo nickname", parent=msg)
+        
+        self.gui_done = False
+        self.running = True
+    
+        gui_thread = threading.Thread(target=self.gui_loop)
+        receive_thread = threading.Thread(target=self.receive)
+        
+        gui_thread.start()
+        receive_thread.start()
+    
+    def gui_loop(self):
+        self.win=tk.Tk()
+        self.win.configure(bg="lightgray")
+        
+        self.chat_label=tk.Label(self.win, text="Chat: ", bg="lightgray")
+        self.chat_label.config(font=("Arial", 12))
+        self.chat_label.pack(padx=20, pady=5)
+        
+        self.text_area = tk.scrolledtext.ScrolledText(self.win)
+        self.text_area.pack(padx=20, pady=5)
+        self.text_area.config(state='disabled')
+        
+        self.msg_label=tk.Label(self.win, text="Messagio: ", bg="lightgray")
+        self.msg_label.config(font=("Arial", 12))
+        self.msg_label.pack(padx=20, pady=5)
+        
+        self.input_area = tk.Text(self.win, height=3)
+        self.input_area.pack(padx=20, pady=5)
+        
+        self.send_button = tk.Button(self.win, text="Invia", command = self.write)
+        self.send_button.config(font=("Arial", 12))
+        self.send_button.pack(padx=20, pady=5)
+        
+        self.gui_done=True
+        
+        self.win.protocol("WM_DELETE_WINDOW", self.stop)
+        
+        self.win.mainloop()
+        
+    def write(self):
+        message_text=self.input_area.get('1.0','end').strip()
+        message = self.nickname+": "+ message_text + "\n"
+        self.sock.send(message.encode('utf-8'))
+        self.input_area.delete('1.0', 'end')
+        
+    def stop(self):
+        self.running=False
+        self.win.destroy()
+        self.sock.close()
+        exit(0)
+    
+    def receive(self):
+        while self.running:
+            
+            try:
+                message = self.sock.recv(1024).decode('utf-8')
+                if message == 'nickname':
+                    self.sock.send(self.nickname.encode('utf-8'))
+                else:
+                    if self.gui_done:
+                        self.text_area.config(state='normal')
+                        self.text_area.insert('end', message)
+                        self.text_area.yview('end')
+                        self.text_area.config(state='disabled')
+            except OSError:
+                break
+            except:
+                print("Error...")
+                self.sock.close()
+                break
+            
+client = Client(SERVER_HOST, SERVER_PORT)
