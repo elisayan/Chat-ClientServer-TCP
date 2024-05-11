@@ -2,7 +2,7 @@ import socket
 import threading
 
 SERVER_HOST = ''
-SERVER_PORT = 12345
+SERVER_PORT = 53000
 ADDR = (SERVER_HOST,SERVER_PORT)
 
 def accept_client():
@@ -22,7 +22,7 @@ def accept_client():
         
         threading.Thread(target=handle_client, args=(client, nickname, )).start()
 
-def handle_client(client, nickname):
+def handle_client(client, nickname):    
     while True:
         try:
             message=client.recv(1024).decode('utf-8')

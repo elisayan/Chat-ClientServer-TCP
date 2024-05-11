@@ -5,7 +5,7 @@ import tkinter.scrolledtext
 from tkinter import simpledialog
 
 SERVER_HOST = input("Inserisci il server host: ")
-SERVER_PORT = int(input("Inserisci il server port: ") or 12345)
+SERVER_PORT = int(input("Inserisci il server port: ") or 53000)
 ADDR = (SERVER_HOST, SERVER_PORT)
 
 class Client:
