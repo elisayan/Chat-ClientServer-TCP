@@ -30,6 +30,7 @@ class Client:
     
     def gui_loop(self):
         self.win=tk.Tk()
+        self.win.title("Chat Room")
         self.win.configure(bg="lightgray")
         
         self.chat_label=tk.Label(self.win, text="Chat: ", bg="lightgray")
