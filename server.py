@@ -1,55 +1,55 @@
 import socket
 import threading
 
+SERVER_HOST = ''
+SERVER_PORT = 12345
+ADDR = (SERVER_HOST,SERVER_PORT)
+
 def accept_client():
     while True:
-        client,client_address = server_socket.accept()
-        print("%s: %s si è collegato" %client_address)
-        client.send(bytes("Digita il tuo nome: ", "utf8"))
-        address[client]=client_address
-        threading.Thread(target=handle_client, args=(client, )).start()
+        client, address = server_socket.accept()
+        print("%s:%s si è collegato" % address)
+        client.send("nickname".encode('utf-8'))
+        nickname = client.recv(1024).decode('utf-8')
+        
+        nicknames.append(nickname)
+        clients.append(client)
+        
+        print("Il nickname del client è %s" % nickname)
+        
+        welcome_msg="%s si è connesso al server!\n" % nickname
+        broadcast(welcome_msg)
+        
+        threading.Thread(target=handle_client, args=(client, nickname, )).start()
 
-def handle_client(client_socket):   
-    name=client_socket.recv(1024).decode("utf8")
-    welcome_message = "Benvenuto nella chat, "+name+"!"
-    client_socket.send(bytes(welcome_message,"utf8"))
-    
-    entry_message="%s è entrato nella chat" % name
-    broadcast(bytes(entry_message, "utf8"), name)
-    clients[client_socket]=name
-    
+def handle_client(client, nickname):
     while True:
         try:
-            message=client_socket.recv(1024)
+            message=client.recv(1024).decode('utf-8')
+            print(nickname +" dice "+message)
+            broadcast(message)
             
-            if message == bytes("{quit}", "utf8"):
-                client_socket.send(bytes("{quit}", "utf8"))
-                client_socket.close()
-                remove_client(client_socket)
-                broadcast(name + " ha lasciato la chat", name)
-                break
-            else:
-                broadcast(message, name+": ")
         except:
-            continue    
+            remove_client(client)
+            break
 
-def broadcast(message,prefisso=""):
+def broadcast(message):
+    message = message.encode('utf-8')
+    
     for client in clients:
         try:
-            client.send(bytes(prefisso,"utf8")+message)
+            client.send(message)
         except:
             remove_client(client)
 
 def remove_client(client):
     if client in clients:
+        nickname = nicknames.pop(clients.index(client))
         clients.remove(client)
+        broadcast("%s ha lasciato la chat..." % nickname)
 
-clients = {}
-address = {}
-
-SERVER_HOST = ''
-SERVER_PORT = 12345
-ADDR = (SERVER_HOST,SERVER_PORT)
+clients = []
+nicknames = []
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
