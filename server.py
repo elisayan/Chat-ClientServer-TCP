@@ -6,7 +6,7 @@ SERVER_PORT = 53000
 ADDR = (SERVER_HOST,SERVER_PORT)
 
 def accept_client():
-    while True:
+    while running:
         
         try:
             client, address = server_socket.accept()
@@ -32,13 +32,15 @@ def accept_client():
                 
             except Exception as e:
                 print("Errore durante la ricezione del nickname: ", e)
-                #client.close()
+                client.close()
                 
         except Exception as e:
-            print("Errore durante l'accettazione del client: ", e)
+            if running:
+                print("Errore durante l'accettazione del client: ", e)
+            break
 
 def handle_client(client, nickname):    
-    while True:
+    while running:
         try:
             message=client.recv(1024).decode('utf-8')
             broadcast(message)
@@ -62,6 +64,23 @@ def remove_client(client):
         clients.remove(client)
         broadcast("%s ha lasciato la chat...\n" % nickname)
         client.close()
+        
+def shutdown_server():
+    global running
+    running = False
+    broadcast("Server chiuso. Tutte le connessioni verrano terminate")
+    for client in clients:
+        client.close()
+    server_socket.close()
+    print("Server chiuso correttamente")
+    
+def admin_commands():
+    while True:
+        command = input("")
+        if command.lower() == "quit" or command.lower() == "shutdown":
+            print("Chiusura del server...")
+            shutdown_server()
+            break
 
 clients = []
 nicknames = []
@@ -69,11 +88,20 @@ nicknames = []
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(ADDR)
 
+running = True
+
 if __name__ == "__main__":
     server_socket.listen(5)
     print("Server in ascolto...")
        
     client_thread = threading.Thread(target=accept_client)
     client_thread.start()
+    
+    admin_thread = threading.Thread(target=admin_commands)
+    admin_thread.start()    
+    
     client_thread.join()
-    server_socket.close()
+    admin_thread.join()
+        
+        
+        
