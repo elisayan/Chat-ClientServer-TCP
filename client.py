@@ -4,29 +4,37 @@ import tkinter as tk
 import tkinter.scrolledtext
 from tkinter import simpledialog
 
-SERVER_HOST = input("Inserisci il server host: ")
-SERVER_PORT = int(input("Inserisci il server port: ") or 53000)
-ADDR = (SERVER_HOST, SERVER_PORT)
-
 class Client:
     
-    def __init__(self, SERVER_HOST, SERVER_PORT):    
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(ADDR)
+    def __init__(self):    
+        self.server_host=None
+        self.server_post = None
+        self.sock=None
         
-        msg=tk.Tk()
-        msg.withdraw()
-        
-        self.nickname = simpledialog.askstring("Nickname", "Inserisci il tuo nickname", parent=msg)
-        
-        self.gui_done = False
-        self.running = True
-    
-        gui_thread = threading.Thread(target=self.gui_loop)
-        receive_thread = threading.Thread(target=self.receive)
-        
-        gui_thread.start()
-        receive_thread.start()
+    def askHost(self):
+        while True:
+            server_host = input("Inserisci il server host: ")
+            
+            try:
+                socket.gethostbyname(server_host)
+                self.server_host = server_host;
+                break
+            except socket.gaierror:
+                print ("Host non valido, riprova")
+                
+    def connectionServer(self):
+        while True:
+            
+            try:            
+                server_port = int(input("Inserisci il server port: ") or 53000)
+                ADDR = (self.server_host,server_port)
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.connect(ADDR)
+                print("Connessione riuscita!")
+                break
+            except socket.error as e:
+                print("Errore di connessione: ", e)
+                print("Riprova...")
     
     def gui_loop(self):
         self.win=tk.Tk()
@@ -67,7 +75,8 @@ class Client:
     def stop(self):
         self.running=False
         self.win.destroy()
-        self.sock.close()
+        if self.sock:
+            self.sock.close()
         exit(0)
     
     def receive(self):
@@ -85,9 +94,29 @@ class Client:
                         self.text_area.config(state='disabled')
             except OSError:
                 break
-            except:
-                print("Error...")
-                self.sock.close()
+            except Exception as e:
+                print("Errore: ", e)
+                if self.sock:
+                    self.sock.close()
                 break
             
-client = Client(SERVER_HOST, SERVER_PORT)
+def main():
+    client = Client()
+    client.askHost()
+    client.connectionServer()
+    msg=tk.Tk()
+    msg.withdraw()
+    
+    client.nickname = simpledialog.askstring("Nickname", "Inserisci il tuo nickname", parent=msg)
+    
+    client.gui_done = False
+    client.running = True
+
+    gui_thread = threading.Thread(target=client.gui_loop)
+    receive_thread = threading.Thread(target=client.receive)
+    
+    gui_thread.start()
+    receive_thread.start()
+
+if __name__ == "__main__":
+    main()
